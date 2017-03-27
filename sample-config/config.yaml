@@ -4,12 +4,16 @@ aws:
 plugins:
   - name: "eb"
     environments:
-      my-eb-env1:
-        librato_space: 12345
-      my-eb-env-2:
-        librato_space: 6789
+      -
+        "name" : "my_eb_env_1"
+        "librato_space" : 1111
+      -
+        "name" : "my_eb_env_2"
+        "librato_space" : 1111
 
   - name: "ecs"
     clusters:
-      my-ecs-cluster-1:
-        librato_space: 7777
+      -
+        "name" : "my_ecs_cluster_1"
+        "librato_space" : 1234
+
