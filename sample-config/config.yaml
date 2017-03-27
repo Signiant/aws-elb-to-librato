@@ -1,0 +1,15 @@
+aws:
+  region: "us-east-1"
+
+plugins:
+  - name: "eb"
+    environments:
+      my-eb-env1:
+        librato_space: 12345
+      my-eb-env-2:
+        librato_space: 6789
+
+  - name: "ecs"
+    clusters:
+      my-ecs-cluster-1:
+        librato_space: 7777

@@ -1,0 +1,3 @@
+librato-metrics
+pyyaml
+boto3
