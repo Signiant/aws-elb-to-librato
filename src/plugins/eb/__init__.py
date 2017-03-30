@@ -78,9 +78,15 @@ def get_lb_type(lbname,region):
 
     return lb_type
 
+#
+# Create charts in Librato for each EB environment
+#
 def putLibratoCharts(configMap,debug):
     if debug: log("putting Librato charts for plugin : " + id())
-    #pprint.pprint(configMap)
+    if debug: pprint.pprint(configMap)
+
+    chart_status = 0
+    plugin_status = 0
 
     if 'aws' in configMap and configMap['aws']:
         if 'region' in configMap['aws']:
@@ -109,4 +115,17 @@ def putLibratoCharts(configMap,debug):
                 env_lb_type = get_lb_type(env_lb,aws_region)
 
                 if env_lb_type != "unknown":
-                    librato_lb_chart.createLibratoLBChartInSpace(env_lb,env_lb_type,environment["librato_space"],configMap,debug)
+                    chart_status = librato_lb_chart.createLibratoLBChartInSpace(env_lb,env_lb_type,environment["name"],environment["librato_space"],configMap,debug)
+
+                    if chart_status == 0:
+                        log("Chart successfully created in Librato for LB " + env_lb + " with name " + environment["name"])
+                    elif chart_status == 1:
+                        log("Error creating a chart in Librato for LB " + env_lb + " with name " + environment["name"])
+                        plugin_status = 1
+                    elif chart_status == 2:
+                        log("Chart already exists in Librato for LB " + env_lb + " with name " + environment["name"])
+                    else:
+                        log("Unknown error creating a chart in Librato for LB " + env_lb + " with name " + environment["name"])
+                        plugin_status = 1
+
+    return plugin_status

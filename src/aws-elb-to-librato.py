@@ -30,6 +30,7 @@ def main(argv):
     parser = argparse.ArgumentParser(description='Create charts in Librato')
     parser.add_argument('-d','--debug', help='Enable debug output',action='store_true')
     parser.add_argument('-c','--config', help='Full path to a config file',required=True)
+    parser.add_argument('-p','--plugin', help='Plugin to run',required=False)
 
     args = parser.parse_args()
 
@@ -41,11 +42,18 @@ def main(argv):
             plugin_name = config_plugin['name']
             print "Loading plugin %s" % plugin_name
 
+            if(args.plugin):
+                if plugin_name != args.plugin:
+                    continue
+                else:
+                    print "Single plugin selected - only executing plugin " + plugin_name
+
             # Load the plugin from the plugins folder
             plugin_handle = plugin.loadPlugin(plugin_name)
 
             # Store the plugin output in a dict
             plugin_results[plugin_name] = plugin_handle.putLibratoCharts(configMap,args.debug)
+
 
 if __name__ == "__main__":
    main(sys.argv[1:])
