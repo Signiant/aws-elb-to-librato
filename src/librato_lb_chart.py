@@ -17,7 +17,7 @@ def getLibratoCredentials(configMap):
     return creds
 
 def doesChartExist(lb_name,space_id,friendly_name,creds,debug):
-    retval = 0
+    chart_id = 0
     space = ''
 
     if debug: log("Checking if a chart exists in space ID " + str(space_id) + " with name " + friendly_name)
@@ -41,7 +41,7 @@ def doesChartExist(lb_name,space_id,friendly_name,creds,debug):
                 retval = 1
                 break
 
-    return retval
+    return chart_id
 
 def getCompositeMetric(lb_name,lb_type):
 
@@ -84,7 +84,7 @@ def getCompositeMetric(lb_name,lb_type):
 def createLBChart(lb_name,lb_type,space_id,friendly_name,chart_type,creds,debug):
     retval = 0
 
-    if debug: log("Creating a chart in Librato for an ELB")
+    if debug: log("Creating a chart in Librato")
 
     api = librato.connect(creds['user'], creds['token'])
 
@@ -128,22 +128,57 @@ def createLBChart(lb_name,lb_type,space_id,friendly_name,chart_type,creds,debug)
 
     return retval
 
+def updateLBChart(lb_name,lb_type,chart_id,space_id,friendly_name,chart_type,creds,debug):
+    retval = 0
+
+    # We need to delete the existing stream and add a new one
+
+
+    if debug: log("Updating a chart in Librato")
+
+    api = librato.connect(creds['user'], creds['token'])
+
+    try:
+        space = api.get_space(space_id)
+    except Exception as e:
+        log("Error retrieving space with ID " + str(space_id) + " from Librato: " + str(e))
+
+    librato_metric_stream = {
+        "composite": getCompositeMetric(lb_name,lb_type),
+        "type": "composite",
+        "summary_function": "average",
+        "units_short": "% uptime",
+        "transform_function": "(1-x)*100",
+        "downsample_function": "average"
+    }
+
+    if space:
+        charts = space.chart_ids
+        chart = api.get_chart(chart_id, space.id)
+        chart.new_stream(librato_metric_stream)
+        chart.save()
+
+    return retval
+
 def createLibratoLBChartInSpace(lb_name,lb_type,friendly_name,chart_type,space_id,configMap,debug):
     retval = 1
+    chart_id = 0
 
     log("Creating Librato chart for LB " + lb_name + " in space " + str(space_id))
 
     librato_creds = getLibratoCredentials(configMap)
 
     if librato_creds['user'] and librato_creds['token']:
-        if doesChartExist(lb_name,space_id,friendly_name,librato_creds,debug):
-            if debug: log("Chart already exists in librato with name " + friendly_name)
-            retval = 2
+        chart_id = doesChartExist(lb_name,space_id,friendly_name,librato_creds,debug)
+
+        if chart_id:
+            if debug: log("Chart already exists in librato with name " + friendly_name + " id " + str(chart_id) + " - replacing")
+
+            retval = updateLBChart(lb_name,lb_type,chart_id,space_id,friendly_name,chart_type,librato_creds,debug)
         else:
             if debug: log("no chart found in Librato - creating")
 
             retval = createLBChart(lb_name,lb_type,space_id,friendly_name,chart_type,librato_creds,debug)
-
     else:
         log("No Librato configuration in config file - unable to create charts in Librato")
         retval = 1

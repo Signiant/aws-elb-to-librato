@@ -153,12 +153,10 @@ def putLibratoCharts(configMap,debug):
                                                                                     debug)
 
                         if chart_status == 0:
-                            log("Chart successfully created in Librato for LB " + cluster_service['lb_name'] + " with name " + cluster_service["friendly_name"])
+                            log("Chart successfully created/updated in Librato for LB " + cluster_service['lb_name'] + " with name " + cluster_service["friendly_name"])
                         elif chart_status == 1:
                             log("Error creating a chart in Librato for LB " + cluster_service['lb_name'] + " with name " + cluster_service["friendly_name"])
                             plugin_status = 1
-                        elif chart_status == 2:
-                            log("Chart already exists in Librato for LB " + cluster_service['lb_name'] + " with name " + cluster_service["friendly_name"])
                         else:
                             log("Unknown error creating a chart in Librato for LB " + cluster_service['lb_name'] + " with name " + cluster_service["friendly_name"])
                             plugin_status = 1
