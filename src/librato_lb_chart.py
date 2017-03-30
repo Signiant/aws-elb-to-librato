@@ -81,7 +81,7 @@ def getCompositeMetric(lb_name,lb_type):
 
     return composite_metric
 
-def createLBChart(lb_name,lb_type,space_id,friendly_name,creds,debug):
+def createLBChart(lb_name,lb_type,space_id,friendly_name,chart_type,creds,debug):
     retval = 0
 
     if debug: log("Creating a chart in Librato for an ELB")
@@ -106,7 +106,7 @@ def createLBChart(lb_name,lb_type,space_id,friendly_name,creds,debug):
         linechart = api.create_chart(
             friendly_name,
             space,
-            type='bignumber',
+            type=chart_type,
 
             streams=[ librato_metric_stream ],
             thresholds=[
@@ -128,7 +128,7 @@ def createLBChart(lb_name,lb_type,space_id,friendly_name,creds,debug):
 
     return retval
 
-def createLibratoLBChartInSpace(lb_name,lb_type,friendly_name,space_id,configMap,debug):
+def createLibratoLBChartInSpace(lb_name,lb_type,friendly_name,chart_type,space_id,configMap,debug):
     retval = 1
 
     log("Creating Librato chart for LB " + lb_name + " in space " + str(space_id))
@@ -142,7 +142,7 @@ def createLibratoLBChartInSpace(lb_name,lb_type,friendly_name,space_id,configMap
         else:
             if debug: log("no chart found in Librato - creating")
 
-            retval = createLBChart(lb_name,lb_type,space_id,friendly_name,librato_creds,debug)
+            retval = createLBChart(lb_name,lb_type,space_id,friendly_name,chart_type,librato_creds,debug)
 
     else:
         log("No Librato configuration in config file - unable to create charts in Librato")

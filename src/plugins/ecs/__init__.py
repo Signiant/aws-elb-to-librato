@@ -132,32 +132,36 @@ def putLibratoCharts(configMap,debug):
 
             for cluster in clusters:
                 log("processing ECS cluster " + cluster["name"])
-                if debug: log("Librato space ID " + str(cluster["librato_space"]))
 
                 # get the info about all the ECS services on this cluster
                 cluster_services = getECSServices(cluster["name"],aws_region,debug)
 
-                # Generate charts for each service
-                for cluster_service in cluster_services:
-                    log("Processing ECS service for Librato chart " + cluster_service['friendly_name'])
+                # now generate charts for each space configured
+                for chart in cluster['charts']:
+                    log("creating chart in space " + str(chart["librato_space"]) + " of type " + chart["chart_type"])
 
-                    chart_status = librato_lb_chart.createLibratoLBChartInSpace(cluster_service['lb_name'],
-                                                                                cluster_service['lb_type'],
-                                                                                cluster_service["friendly_name"],
-                                                                                cluster["librato_space"],
-                                                                                configMap,
-                                                                                debug)
+                    # Generate charts for each service
+                    for cluster_service in cluster_services:
+                        log("Processing ECS service for Librato chart " + cluster_service['friendly_name'])
 
-                    if chart_status == 0:
-                        log("Chart successfully created in Librato for LB " + cluster_service['lb_name'] + " with name " + cluster_service["friendly_name"])
-                    elif chart_status == 1:
-                        log("Error creating a chart in Librato for LB " + cluster_service['lb_name'] + " with name " + cluster_service["friendly_name"])
-                        plugin_status = 1
-                    elif chart_status == 2:
-                        log("Chart already exists in Librato for LB " + cluster_service['lb_name'] + " with name " + cluster_service["friendly_name"])
-                    else:
-                        log("Unknown error creating a chart in Librato for LB " + cluster_service['lb_name'] + " with name " + cluster_service["friendly_name"])
-                        plugin_status = 1
+                        chart_status = librato_lb_chart.createLibratoLBChartInSpace(cluster_service['lb_name'],
+                                                                                    cluster_service['lb_type'],
+                                                                                    cluster_service["friendly_name"],
+                                                                                    chart["chart_type"],
+                                                                                    chart["librato_space"],
+                                                                                    configMap,
+                                                                                    debug)
+
+                        if chart_status == 0:
+                            log("Chart successfully created in Librato for LB " + cluster_service['lb_name'] + " with name " + cluster_service["friendly_name"])
+                        elif chart_status == 1:
+                            log("Error creating a chart in Librato for LB " + cluster_service['lb_name'] + " with name " + cluster_service["friendly_name"])
+                            plugin_status = 1
+                        elif chart_status == 2:
+                            log("Chart already exists in Librato for LB " + cluster_service['lb_name'] + " with name " + cluster_service["friendly_name"])
+                        else:
+                            log("Unknown error creating a chart in Librato for LB " + cluster_service['lb_name'] + " with name " + cluster_service["friendly_name"])
+                            plugin_status = 1
 
     return plugin_status
 

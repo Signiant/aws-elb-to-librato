@@ -5,15 +5,21 @@ plugins:
   - name: "eb"
     environments:
       -
-        "name" : "my_eb_env_1"
-        "librato_space" : 1111
-      -
-        "name" : "my_eb_env_2"
-        "librato_space" : 1111
+        "name" : "my_eb_env"
+        charts:
+          -
+            "librato_space" : 1111
+            "chart_type" : "bignumber"
+          -
+            "librato_space" : 2222
+            "chart_type" : "line"
 
   - name: "ecs"
     clusters:
       -
         "name" : "my_ecs_cluster_1"
-        "librato_space" : 1234
+        "charts":
+          -
+            "librato_space" : 1234
+            "chart_type" : "bignumber"
 

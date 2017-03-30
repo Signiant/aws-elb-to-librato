@@ -22,7 +22,7 @@ def get_env_elb(envname,region):
             EnvironmentName=envname
         )
     except Exception, e:
-        log("Error describing the EB environment resources for " + environment["name"] + " (" + str(e) + ")")
+        log("Error describing the EB environment resources for " + envname + " (" + str(e) + ")")
 
     if response:
         # Eb only uses a single load balancer so grab the first
@@ -107,7 +107,6 @@ def putLibratoCharts(configMap,debug):
 
             for environment in environments:
                 log("processing EB env " + environment["name"])
-                if debug: log("Librato space ID " + str(environment["librato_space"]))
 
                 env_lb = get_env_elb(environment["name"],aws_region)
                 if debug: log("Found LB for " + environment["name"] + " is " + env_lb)
@@ -115,17 +114,27 @@ def putLibratoCharts(configMap,debug):
                 env_lb_type = get_lb_type(env_lb,aws_region)
 
                 if env_lb_type != "unknown":
-                    chart_status = librato_lb_chart.createLibratoLBChartInSpace(env_lb,env_lb_type,environment["name"],environment["librato_space"],configMap,debug)
+                    # create all our charts
+                    for chart in environment['charts']:
+                        log("creating chart in space " + str(chart["librato_space"]) + " of type " + chart["chart_type"])
 
-                    if chart_status == 0:
-                        log("Chart successfully created in Librato for LB " + env_lb + " with name " + environment["name"])
-                    elif chart_status == 1:
-                        log("Error creating a chart in Librato for LB " + env_lb + " with name " + environment["name"])
-                        plugin_status = 1
-                    elif chart_status == 2:
-                        log("Chart already exists in Librato for LB " + env_lb + " with name " + environment["name"])
-                    else:
-                        log("Unknown error creating a chart in Librato for LB " + env_lb + " with name " + environment["name"])
-                        plugin_status = 1
+                        chart_status = librato_lb_chart.createLibratoLBChartInSpace(env_lb,
+                                                                                    env_lb_type,
+                                                                                    environment["name"],
+                                                                                    chart["chart_type"],
+                                                                                    chart["librato_space"],
+                                                                                    configMap,
+                                                                                    debug)
+
+                        if chart_status == 0:
+                            log("Chart successfully created in Librato for LB " + env_lb + " with name " + environment["name"])
+                        elif chart_status == 1:
+                            log("Error creating a chart in Librato for LB " + env_lb + " with name " + environment["name"])
+                            plugin_status = 1
+                        elif chart_status == 2:
+                            log("Chart already exists in Librato for LB " + env_lb + " with name " + environment["name"])
+                        else:
+                            log("Unknown error creating a chart in Librato for LB " + env_lb + " with name " + environment["name"])
+                            plugin_status = 1
 
     return plugin_status

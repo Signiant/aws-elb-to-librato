@@ -53,6 +53,8 @@ def main(argv):
 
             # Store the plugin output in a dict
             plugin_results[plugin_name] = plugin_handle.putLibratoCharts(configMap,args.debug)
+    else:
+        print "ERROR: Unable to read the config"
 
 
 if __name__ == "__main__":
