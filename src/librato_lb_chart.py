@@ -24,6 +24,7 @@ def getLibratoCredentials(configMap):
 #
 def doesChartExist(lb_name,space_id,friendly_name,creds,debug):
     chart_id = 0
+    found_chart_id = 0
     space = ''
 
     if debug: log("Checking if a chart exists in space ID " + str(space_id) + " with name " + friendly_name)
@@ -44,10 +45,10 @@ def doesChartExist(lb_name,space_id,friendly_name,creds,debug):
 
             if chart_info.name.lower() == friendly_name.lower():
                 if debug: log("Match found - chart exists")
-                retval = 1
+                found_chart_id = chart_id
                 break
 
-    return chart_id
+    return found_chart_id
 
 #
 # Returns the composite metric struture for an ELB or ALB
@@ -204,9 +205,10 @@ def createLibratoLBChartInSpace(lb_name,lb_type,friendly_name,chart_type,space_i
 
     if librato_creds['user'] and librato_creds['token']:
         chart_id = doesChartExist(lb_name,space_id,friendly_name,librato_creds,debug)
+        if debug: log("Existing chart id is " + str(chart_id))
 
-        if chart_id:
-            if debug: log("Chart already exists in librato with name " + friendly_name + " id " + str(chart_id) + " - replacing")
+        if chart_id != 0:
+            if debug: log("Chart already exists in librato with name " + friendly_name + " id " + str(chart_id))
 
             # Does this pre-existing chart use the same load balancer?  If not, delete and re-add add
             if not checkForLBInStream(lb_name, chart_id, space_id, librato_creds, debug):
