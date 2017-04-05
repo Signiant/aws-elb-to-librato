@@ -13,13 +13,17 @@ plugins:
           -
             "librato_space" : 2222
             "chart_type" : "line"
+            "deploy_feed" : "deployments"
 
   - name: "ecs"
     clusters:
       -
-        "name" : "my_ecs_cluster_1"
+        "name" : "my_ecs_cluster"
         "charts":
-          -
-            "librato_space" : 1234
-            "chart_type" : "bignumber"
-
+        -
+          "librato_space" : 12345
+          "chart_type" : "bignumber"
+        -
+          "librato_space" : 7890
+          "chart_type" : "line"
+          "deploy_feed" : "deployments"

@@ -7,6 +7,7 @@ import boto3
 
 # Project modules
 import plugin
+import librato_lb_chart
 
 def readConfigFile(path):
     configMap = []

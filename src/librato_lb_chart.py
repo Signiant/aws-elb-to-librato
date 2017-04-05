@@ -19,6 +19,45 @@ def getLibratoCredentials(configMap):
 
     return creds
 
+
+#
+# Verify that the deployments metric stream exists and create it if not
+#
+def initializeDeploymentsStream(stream_name, creds, debug):
+    retval = 0
+    annotation_streams = []
+    stream_exists = False
+
+    api = librato.connect(creds['user'], creds['token'])
+
+    try:
+        annotation_streams =  api.list_annotation_streams()
+    except Exception as e:
+        log("Error listing annotation streams")
+
+    for stream in annotation_streams:
+        if stream_name.lower() == str(stream.name).lower():
+            stream_exists = True
+
+    if not stream_exists:
+        # We need to add the stream by posting a metric in the past
+        retval = api.post_annotation(stream_name,
+                                    title="Stream Initialization",
+                                    start_time="1234567890",
+                                    description="Initializing deployment stream")
+
+    return retval
+#
+# Returns the name of the configured deploy feed
+#
+def getDeploymentsStreamName(configMap):
+    stream_name = ""
+
+    if 'librato' in configMap and configMap['librato']:
+        if 'deploy_feed' in configMap['librato']:
+            stream_name = configMap['librato']['deploy_feed']
+
+    return stream_name
 #
 # Checks if a chart with name friendly_name already exists in a given space. Returns the ID if so
 #
@@ -92,10 +131,42 @@ def getCompositeMetric(lb_name,lb_type):
     return composite_metric
 
 #
+# Get the metric streams we will display
+#
+def getMetricStreams(lb_name,lb_type,deployments_stream_name):
+    stream_list = []
+
+    librato_metric_stream = {
+        "composite": getCompositeMetric(lb_name,lb_type),
+        "type": "composite",
+        "summary_function": "average",
+        "units_short": "% uptime",
+        "transform_function": "(1-x)*100",
+        "downsample_function": "average"
+    }
+
+    if deployments_stream_name:
+        deploy_annotation_stream = {
+            "metric": deployments_stream_name,
+            "type": "annotation",
+            "source": "*",
+            "summary_function": "average",
+            "position": 1,
+            "split_axis": "false"
+        }
+
+        stream_list = [librato_metric_stream,deploy_annotation_stream]
+    else:
+        stream_list = [librato_metric_stream]
+
+    return stream_list
+
+#
 # Creates a new chart for a load balancer in Librato
 #
-def createLBChart(lb_name,lb_type,space_id,friendly_name,chart_type,creds,debug):
+def createLBChart(lb_name,lb_type,space_id,friendly_name,chart_type,deployments_stream_name,creds,debug):
     retval = 0
+    librato_metric_stream_list = []
 
     if debug: log("Creating a chart in Librato")
 
@@ -107,14 +178,7 @@ def createLBChart(lb_name,lb_type,space_id,friendly_name,chart_type,creds,debug)
         log("Error retrieving space with ID " + str(space_id) + " from Librato: " + str(e))
         retval = 1
 
-    librato_metric_stream = {
-        "composite": getCompositeMetric(lb_name,lb_type),
-        "type": "composite",
-        "summary_function": "average",
-        "units_short": "% uptime",
-        "transform_function": "(1-x)*100",
-        "downsample_function": "average"
-    }
+    librato_metric_stream_list = getMetricStreams(lb_name,lb_type,deployments_stream_name)
 
     if space:
         linechart = api.create_chart(
@@ -122,7 +186,7 @@ def createLBChart(lb_name,lb_type,space_id,friendly_name,chart_type,creds,debug)
             space,
             type=chart_type,
 
-            streams=[ librato_metric_stream ],
+            streams= librato_metric_stream_list,
             thresholds=[
                 {
                     "operator": "<",
@@ -195,7 +259,7 @@ def checkForLBInStream(lb_name,chart_id,space_id,creds,debug):
 #
 # Main routine to handle creating or replacing the chart in Librato
 #
-def createLibratoLBChartInSpace(lb_name,lb_type,friendly_name,chart_type,space_id,configMap,debug):
+def createLibratoLBChartInSpace(lb_name,lb_type,friendly_name,chart_type,space_id,deployments_stream_name,configMap,debug):
     retval = 1
     chart_id = 0
 
@@ -207,6 +271,10 @@ def createLibratoLBChartInSpace(lb_name,lb_type,friendly_name,chart_type,space_i
         chart_id = doesChartExist(lb_name,space_id,friendly_name,librato_creds,debug)
         if debug: log("Existing chart id is " + str(chart_id))
 
+        if deployments_stream_name:
+            # We need to make sure the stream already exists
+            initializeDeploymentsStream(deployments_stream_name,librato_creds,debug)
+
         if chart_id != 0:
             if debug: log("Chart already exists in librato with name " + friendly_name + " id " + str(chart_id))
 
@@ -217,7 +285,14 @@ def createLibratoLBChartInSpace(lb_name,lb_type,friendly_name,chart_type,space_i
                 # LB not found in pre-existing chart - re-create it
                 if  deleteChart(chart_id,space_id,librato_creds,debug) == 0:
                     log("Deleted chart " + str(chart_id) + " from space " + str(space_id))
-                    retval = createLBChart(lb_name, lb_type, space_id, friendly_name, chart_type, librato_creds, debug)
+                    retval = createLBChart(lb_name,
+                                           lb_type,
+                                           space_id,
+                                           friendly_name,
+                                           chart_type,
+                                           deployments_stream_name,
+                                           librato_creds,
+                                           debug)
                 else:
                     log("Error: Unable to delete chart " + str(chart_id) + " from space " + str(space_id))
                     retval = 1
@@ -226,7 +301,14 @@ def createLibratoLBChartInSpace(lb_name,lb_type,friendly_name,chart_type,space_i
         else:
             if debug: log("no pre-existing chart found in Librato - creating")
 
-            retval = createLBChart(lb_name,lb_type,space_id,friendly_name,chart_type,librato_creds,debug)
+            retval = createLBChart(lb_name,
+                                   lb_type,
+                                   space_id,
+                                   friendly_name,
+                                   chart_type,
+                                   deployments_stream_name,
+                                   librato_creds,
+                                   debug)
     else:
         log("Error: No Librato configuration in config file - unable to create charts in Librato")
         retval = 1

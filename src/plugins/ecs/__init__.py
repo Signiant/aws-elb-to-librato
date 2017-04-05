@@ -144,11 +144,18 @@ def putLibratoCharts(configMap,debug):
                     for cluster_service in cluster_services:
                         log("Processing ECS service for Librato chart " + cluster_service['friendly_name'])
 
+                        if 'deploy_feed' in chart:
+                            log("Found a deployment feed for this chart - will add to streams")
+                            deployments_stream_name = chart["deploy_feed"]
+                        else:
+                            deployments_stream_name = ""
+
                         chart_status = librato_lb_chart.createLibratoLBChartInSpace(cluster_service['lb_name'],
                                                                                     cluster_service['lb_type'],
                                                                                     cluster_service["friendly_name"],
                                                                                     chart["chart_type"],
                                                                                     chart["librato_space"],
+                                                                                    deployments_stream_name,
                                                                                     configMap,
                                                                                     debug)
 

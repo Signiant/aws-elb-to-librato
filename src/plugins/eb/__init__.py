@@ -118,11 +118,18 @@ def putLibratoCharts(configMap,debug):
                     for chart in environment['charts']:
                         log("creating chart in space " + str(chart["librato_space"]) + " of type " + chart["chart_type"])
 
+                        if 'deploy_feed' in chart:
+                            log("Found a deployment feed for this chart - will add to streams")
+                            deployments_stream_name = chart["deploy_feed"]
+                        else:
+                            deployments_stream_name = ""
+
                         chart_status = librato_lb_chart.createLibratoLBChartInSpace(env_lb,
                                                                                     env_lb_type,
                                                                                     environment["name"],
                                                                                     chart["chart_type"],
                                                                                     chart["librato_space"],
+                                                                                    deployments_stream_name,
                                                                                     configMap,
                                                                                     debug)
 
