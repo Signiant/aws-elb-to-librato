@@ -38,7 +38,7 @@ def get_lb_type(lbname,region):
     response = ""
     test_for_alb = False
 
-    client = boto3.client('elb')
+    client = boto3.client('elb', region_name=region)
 
     try:
         response = client.describe_load_balancers(
@@ -57,7 +57,7 @@ def get_lb_type(lbname,region):
         # If we have a repsonse, we know the load balancer was found as an ELB
         lb_type = "elb"
     elif test_for_alb:
-        client = boto3.client('elbv2')
+        client = boto3.client('elbv2', region_name=region)
 
         try:
             response = client.describe_load_balancers(
