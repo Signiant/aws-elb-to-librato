@@ -100,7 +100,8 @@ def getECSServices(cluster_name,region,debug):
                     ecs_service['lb_type'] = lb_type
                     services.append(ecs_service.copy())
 
-    pprint.pprint(services)
+        if debug: pprint.pprint(services)
+
     return services
 
 #
