@@ -12,6 +12,14 @@ We also need it to be dynamic as we add new microservices fairly frequently to A
 * You must have an AWS account
 * You must be using either Elastic Beanstalk or ECS services 
 
+# Functionality
+The tool is split into the core and plugins.  Currently, there are 2 plugins:
+
+* ECS
+  * This plugin queries an ECS cluster and will create a chart for each service that uses a load balancer
+* Elastic Beanstalk
+  * This plugin queries given elastic beanstalk environments and adds a chart for each environment's load balancer.  It will only create a chart for the current "live" environment where the live environment is defined by a Route53 DNS entry pointing to the environment's load balancer.
+
 
 # Usage
 
