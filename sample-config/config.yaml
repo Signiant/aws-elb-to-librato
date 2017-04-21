@@ -6,6 +6,9 @@ plugins:
     environments:
       -
         "name" : "my_eb_env"
+        "route53":
+          "switchable_dns" : "my.name.com"
+          "zoneid" : "12345"
         charts:
           -
             "librato_space" : 1111
