@@ -79,6 +79,39 @@ def get_lb_type(lbname,region):
     return lb_type
 
 #
+# Is this EB load balancer currently "live"?
+#
+def is_current_eb_env_live(env_lb,switchable_dns_entry,zoneid,region):
+    isLive = False
+
+    current_live_elb = get_r53_alias_entry(switchable_dns_entry, zoneid).rstrip('.').lower()
+
+    if current_live_elb.startswith(env_lb.lower()):
+        isLive = True
+
+    return isLive
+
+#
+# Get the route53 Alias entry for a given name
+#
+def get_r53_alias_entry(query_name,zoneid):
+    endpoint = ""
+
+    client = boto3.client('route53')
+
+    response = client.list_resource_record_sets(
+        HostedZoneId=zoneid,
+        StartRecordName=query_name,
+        StartRecordType='A',
+        MaxItems='1'
+    )
+
+    if response:
+        endpoint = response['ResourceRecordSets'][0]['AliasTarget']['DNSName']
+
+    return endpoint
+
+#
 # Create charts in Librato for each EB environment
 #
 def putLibratoCharts(configMap,debug):
@@ -99,6 +132,8 @@ def putLibratoCharts(configMap,debug):
         aws_region = "us-east-1"
         log("No AWS region defined in config file - defaulting to us-east-1")
 
+    librato_creds = librato_lb_chart.getLibratoCredentials(configMap)
+
     # get the list of EB envs from the configMap
     for config_plugin in configMap['plugins']:
         if config_plugin['name'] == id():
@@ -116,32 +151,54 @@ def putLibratoCharts(configMap,debug):
                 if env_lb_type != "unknown":
                     # create all our charts
                     for chart in environment['charts']:
-                        log("creating chart in space " + str(chart["librato_space"]) + " of type " + chart["chart_type"])
+                        # Should we be adding a chart or deleting one?
+                        # We only want to show a chart for the currently live environment
+                        log("Determining if we need to show a chart for " + environment["name"])
 
-                        if 'deploy_feed' in chart:
-                            log("Found a deployment feed for this chart - will add to streams")
-                            deployments_stream_name = chart["deploy_feed"]
+                        # env_lb,switchable_dns_entry,zoneid,region
+                        if is_current_eb_env_live(env_lb,environment["route53"]["switchable_dns"],environment["route53"]["zoneid"],aws_region):
+                            # we need a chart for this one
+                            log("Environment " + environment["name"] + " is live. Creating chart in space " + str(chart["librato_space"]) + " of type " + chart[
+                                "chart_type"])
+
+                            if 'deploy_feed' in chart:
+                                log("Found a deployment feed for this chart - will add to streams")
+                                deployments_stream_name = chart["deploy_feed"]
+                            else:
+                                deployments_stream_name = ""
+
+                            chart_status = librato_lb_chart.createLibratoLBChartInSpace(env_lb,
+                                                                                        env_lb_type,
+                                                                                        environment["name"],
+                                                                                        chart["chart_type"],
+                                                                                        chart["librato_space"],
+                                                                                        deployments_stream_name,
+                                                                                        configMap,
+                                                                                        debug)
+
+                            if chart_status == 0:
+                                log("Chart successfully created in Librato for LB " + env_lb + " with name " +
+                                    environment["name"])
+                            elif chart_status == 1:
+                                log("Error creating a chart in Librato for LB " + env_lb + " with name " + environment[
+                                    "name"])
+                                plugin_status = 1
+                            elif chart_status == 2:
+                                log("Chart already exists in Librato for LB " + env_lb + " with name " + environment[
+                                    "name"])
+                            else:
+                                log("Unknown error creating a chart in Librato for LB " + env_lb + " with name " +
+                                    environment["name"])
+                                plugin_status = 1
                         else:
-                            deployments_stream_name = ""
+                            log("Environment " + environment["name"] + " is not live...not creating chart or deleting existing chart")
+                            chart_id = librato_lb_chart.doesChartExist(env_lb, chart["librato_space"], environment["name"], librato_creds, debug)
 
-                        chart_status = librato_lb_chart.createLibratoLBChartInSpace(env_lb,
-                                                                                    env_lb_type,
-                                                                                    environment["name"],
-                                                                                    chart["chart_type"],
-                                                                                    chart["librato_space"],
-                                                                                    deployments_stream_name,
-                                                                                    configMap,
-                                                                                    debug)
-
-                        if chart_status == 0:
-                            log("Chart successfully created in Librato for LB " + env_lb + " with name " + environment["name"])
-                        elif chart_status == 1:
-                            log("Error creating a chart in Librato for LB " + env_lb + " with name " + environment["name"])
-                            plugin_status = 1
-                        elif chart_status == 2:
-                            log("Chart already exists in Librato for LB " + env_lb + " with name " + environment["name"])
-                        else:
-                            log("Unknown error creating a chart in Librato for LB " + env_lb + " with name " + environment["name"])
-                            plugin_status = 1
+                            if chart_id != 0:
+                                if librato_lb_chart.deleteChart(chart_id, chart["librato_space"], librato_creds, debug) == 0:
+                                    log("Deleted chart " + str(chart_id) + " from space " + str(chart["librato_space"]))
+                                else:
+                                    log("Error: Unable to delete chart " + str(chart_id) + " from space " + str(chart["librato_space"]))
+                                    plugin_status = 1
 
     return plugin_status
