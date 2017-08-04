@@ -164,11 +164,11 @@ def getMetricStreams(lb_name,lb_type,deployments_stream_name):
 #
 # Creates a new chart for a load balancer in Librato
 #
-def createLBChart(lb_name,lb_type,space_id,friendly_name,chart_type,deployments_stream_name,creds,debug):
+def createLBChart(lb_name,lb_type,space_id,friendly_name,chart_type,red_threshold,yellow_threshold,deployments_stream_name,creds,debug):
     retval = 0
     librato_metric_stream_list = []
 
-    if debug: log("Creating a chart in Librato")
+    if debug: log("Creating a chart in Librato using thresholds: red %s yellow %s" % (str(red_threshold),str(yellow_threshold)))
 
     api = librato.connect(creds['user'], creds['token'])
 
@@ -190,12 +190,12 @@ def createLBChart(lb_name,lb_type,space_id,friendly_name,chart_type,deployments_
             thresholds=[
                 {
                     "operator": "<",
-                    "value": 99.95,
+                    "value": red_threshold,
                     "type": "red"
                 },
                 {
                     "operator": "<",
-                    "value": 99.97,
+                    "value": yellow_threshold,
                     "type": "yellow"
                 }
             ],
@@ -259,7 +259,7 @@ def checkForLBInStream(lb_name,chart_id,space_id,creds,debug):
 #
 # Main routine to handle creating or replacing the chart in Librato
 #
-def createLibratoLBChartInSpace(lb_name,lb_type,friendly_name,chart_type,space_id,deployments_stream_name,configMap,debug):
+def createLibratoLBChartInSpace(lb_name,lb_type,friendly_name,chart_type,space_id,red_threshold,yellow_threshold,deployments_stream_name,configMap,debug):
     retval = 1
     chart_id = 0
 
@@ -290,6 +290,8 @@ def createLibratoLBChartInSpace(lb_name,lb_type,friendly_name,chart_type,space_i
                                            space_id,
                                            friendly_name,
                                            chart_type,
+                                           red_threshold,
+                                           yellow_threshold,
                                            deployments_stream_name,
                                            librato_creds,
                                            debug)
@@ -306,6 +308,8 @@ def createLibratoLBChartInSpace(lb_name,lb_type,friendly_name,chart_type,space_i
                                    space_id,
                                    friendly_name,
                                    chart_type,
+                                   red_threshold,
+                                   yellow_threshold,
                                    deployments_stream_name,
                                    librato_creds,
                                    debug)

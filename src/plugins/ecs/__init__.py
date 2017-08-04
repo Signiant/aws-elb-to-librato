@@ -141,6 +141,10 @@ def putLibratoCharts(configMap,debug):
                 for chart in cluster['charts']:
                     log("creating chart in space " + str(chart["librato_space"]) + " of type " + chart["chart_type"])
 
+                    # Get the default threshold values for this chart (could override later)
+                    red_threshold_val = cluster['thresholds']['default']['red']
+                    yellow_threshold_val = cluster['thresholds']['default']['yellow']
+
                     # Generate charts for each service
                     for cluster_service in cluster_services:
                         log("Processing ECS service for Librato chart " + cluster_service['friendly_name'])
@@ -151,11 +155,20 @@ def putLibratoCharts(configMap,debug):
                         else:
                             deployments_stream_name = ""
 
+                        # Do we have a custom threshold for this service or should we use the default?
+                        log("Checking for threshold override for chart %s" % cluster_service["friendly_name"])
+                        if cluster_service["friendly_name"] in cluster['thresholds']:
+                            red_threshold_val = cluster['thresholds'][cluster_service['friendly_name']]['red']
+                            yellow_threshold_val = cluster['thresholds'][cluster_service['friendly_name']]['yellow']
+                            log("Threshold overrides found red %s yellow %s" % (str(red_threshold_val),str(yellow_threshold_val)))
+
                         chart_status = librato_lb_chart.createLibratoLBChartInSpace(cluster_service['lb_name'],
                                                                                     cluster_service['lb_type'],
                                                                                     cluster_service["friendly_name"],
                                                                                     chart["chart_type"],
                                                                                     chart["librato_space"],
+                                                                                    red_threshold_val,
+                                                                                    yellow_threshold_val,
                                                                                     deployments_stream_name,
                                                                                     configMap,
                                                                                     debug)
@@ -170,4 +183,3 @@ def putLibratoCharts(configMap,debug):
                             plugin_status = 1
 
     return plugin_status
-

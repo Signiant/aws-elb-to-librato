@@ -30,3 +30,10 @@ plugins:
           "librato_space" : 7890
           "chart_type" : "line"
           "deploy_feed" : "deployments"
+        "thresholds":
+          "default":
+            "red": 99.95
+            "yellow": 99.97
+          "my_service_needing_a_different_threshold":
+            "red": 99.92
+            "yellow": 99.91

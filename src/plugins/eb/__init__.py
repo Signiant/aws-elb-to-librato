@@ -143,6 +143,12 @@ def putLibratoCharts(configMap,debug):
             for environment in environments:
                 log("processing EB env " + environment["name"])
 
+                # Set the default threshold values for this chart
+                # TODO: Make this configurable in this plugin
+                red_threshold_val = 99.95
+                yellow_threshold_val = 99.97
+                log("Using chart thresholds of red: %s yellow %s" % (str(red_threshold_val),str(yellow_threshold_val)))
+
                 env_lb = get_env_elb(environment["name"],aws_region)
                 if debug: log("Found LB for " + environment["name"] + " is " + env_lb)
 
@@ -172,6 +178,8 @@ def putLibratoCharts(configMap,debug):
                                                                                         environment["name"],
                                                                                         chart["chart_type"],
                                                                                         chart["librato_space"],
+                                                                                        red_threshold_val,
+                                                                                        yellow_threshold_val,
                                                                                         deployments_stream_name,
                                                                                         configMap,
                                                                                         debug)
