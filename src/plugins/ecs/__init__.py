@@ -144,6 +144,7 @@ def putLibratoCharts(configMap,debug):
                     # Get the default threshold values for this chart (could override later)
                     red_threshold_val = cluster['thresholds']['default']['red']
                     yellow_threshold_val = cluster['thresholds']['default']['yellow']
+                    log("Using chart default thresholds of red: %s yellow %s" % (str(red_threshold_val),str(yellow_threshold_val)))
 
                     # Generate charts for each service
                     for cluster_service in cluster_services:
