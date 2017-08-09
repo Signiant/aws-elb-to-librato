@@ -57,6 +57,7 @@ def main(argv):
     else:
         print "ERROR: Unable to read the config"
 
+    print "Application Complete"
 
 if __name__ == "__main__":
    main(sys.argv[1:])
