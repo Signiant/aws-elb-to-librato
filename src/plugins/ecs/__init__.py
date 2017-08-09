@@ -142,9 +142,9 @@ def putLibratoCharts(configMap,debug):
                     log("creating chart in space " + str(chart["librato_space"]) + " of type " + chart["chart_type"])
 
                     # Get the default threshold values for this chart (could override later)
-                    red_threshold_val = cluster['thresholds']['default']['red']
-                    yellow_threshold_val = cluster['thresholds']['default']['yellow']
-                    log("Using chart default thresholds of red: %s yellow %s" % (str(red_threshold_val),str(yellow_threshold_val)))
+                    red_threshold_default_val = cluster['thresholds']['default']['red']
+                    yellow_threshold_default_val = cluster['thresholds']['default']['yellow']
+                    log("Using chart default thresholds of red: %s yellow %s" % (str(red_threshold_default_val),str(yellow_threshold_default_val)))
 
                     # Generate charts for each service
                     for cluster_service in cluster_services:
@@ -162,6 +162,9 @@ def putLibratoCharts(configMap,debug):
                             red_threshold_val = cluster['thresholds'][cluster_service['friendly_name']]['red']
                             yellow_threshold_val = cluster['thresholds'][cluster_service['friendly_name']]['yellow']
                             log("Threshold overrides found red %s yellow %s" % (str(red_threshold_val),str(yellow_threshold_val)))
+                        else:
+                            red_threshold_val = red_threshold_default_val
+                            yellow_threshold_val = yellow_threshold_default_val
 
                         chart_status = librato_lb_chart.createLibratoLBChartInSpace(cluster_service['lb_name'],
                                                                                     cluster_service['lb_type'],
