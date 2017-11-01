@@ -63,12 +63,10 @@ def getECSServices(cluster_name,region,debug):
 
             for service_desc in services_descriptions['services']:
 
-                # Get the friendly name. Use the docker image name
+                # Get the friendly name. use the service name but strip off the
+                # CFN unique ID
                 friendly_name = ""
-                image = client.describe_task_definition(taskDefinition=service_desc['taskDefinition'])
-
-                if image:
-                    friendly_name = image['taskDefinition']['containerDefinitions'][0]['image'].split(':')[0].split('/')[1]
+                friendly_name = service_desc['serviceName'].rsplit('-',1)[0]
 
                 # Get the load balancer for this service
                 lb_name = ""
@@ -92,13 +90,14 @@ def getECSServices(cluster_name,region,debug):
                             lb_type = ""
                             break
 
-                log("Load balancer name for service " + friendly_name + " is " + lb_name + " type: " + lb_type)
-
                 if lb_name and lb_type and friendly_name:
+                    log("Load balancer name for service " + friendly_name + " is " + lb_name + " type: " + lb_type)
                     ecs_service['friendly_name'] = friendly_name
                     ecs_service['lb_name'] = lb_name
                     ecs_service['lb_type'] = lb_type
                     services.append(ecs_service.copy())
+                else:
+                    log("service " + friendly_name + " has no load balancer")
 
         if debug: pprint.pprint(services)
 
